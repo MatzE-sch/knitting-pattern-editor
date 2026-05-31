@@ -409,8 +409,10 @@
   let currentColor = '#000000';
   let lastPaintedIdx = -1;
 
-  const ZOOM_STEPS = [10, 14, 18, 22, 26];
-  let zoomIdx = 2; // default 18px = 100%
+  // 25% steps from 25% to 200% (base = 18px at 100%)
+  const ZOOM_STEPS = [5, 9, 14, 18, 23, 27, 32, 36];
+  const ZOOM_LABELS = ['25%','50%','75%','100%','125%','150%','175%','200%'];
+  let zoomIdx = 3; // default 100%
 
   // ── DOM refs ───────────────────────────────────────
   const gridWrapper  = document.getElementById('grid-wrapper');
@@ -435,7 +437,7 @@
   function applyZoom() {
     const size = ZOOM_STEPS[zoomIdx];
     document.documentElement.style.setProperty('--cell-size', size + 'px');
-    zoomLabel.textContent = Math.round(size / 18 * 100) + '%';
+    zoomLabel.textContent = ZOOM_LABELS[zoomIdx];
     btnZoomOut.disabled = zoomIdx === 0;
     btnZoomIn.disabled  = zoomIdx === ZOOM_STEPS.length - 1;
     // update grid columns if grid exists
