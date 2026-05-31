@@ -5,22 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Strickmuster-Editor</title>
   <style>
+    :root {
+      --cell-size: 30px;
+    }
+
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    html, body {
+    html {
+      height: 100%;
+    }
+
+    body {
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f0f0f0;
-      overflow: hidden;
     }
 
     #app {
       display: flex;
-      height: 100vh;
+      height: 100%;
+      min-height: 0;
     }
 
     /* ── Sidebar ─────────────────────────────────────── */
@@ -35,6 +43,7 @@
       padding: 20px 14px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
 
     #sidebar h2 {
@@ -80,7 +89,6 @@
       box-shadow: 0 0 0 2px #0a84ff;
     }
 
-    /* hide number spinner arrows */
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
       -webkit-appearance: none;
@@ -104,23 +112,43 @@
       transform: scale(0.97);
     }
 
-    .btn-primary {
-      background: #0a84ff;
-      color: #fff;
+    .btn-primary  { background: #0a84ff; color: #fff; }
+    .btn-secondary { background: #3a3a3c; color: #fff; }
+    .btn-danger   { background: #ff453a; color: #fff; }
+    .btn-success  { background: #30d158; color: #fff; }
+
+    /* ── Zoom row ────────────────────────────────────── */
+    .zoom-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .btn-secondary {
+    .zoom-row .zoom-btn {
+      flex: 0 0 40px;
+      height: 40px;
+      border: none;
+      border-radius: 10px;
       background: #3a3a3c;
       color: #fff;
+      font-size: 22px;
+      font-weight: 300;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
     }
 
-    .btn-danger {
-      background: #ff453a;
-      color: #fff;
-    }
+    .zoom-row .zoom-btn:active { opacity: 0.7; }
+    .zoom-row .zoom-btn:disabled { opacity: 0.3; }
 
-    .btn-success {
-      background: #30d158;
+    .zoom-row .zoom-label {
+      flex: 1;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
       color: #fff;
     }
 
@@ -148,9 +176,7 @@
       user-select: none;
     }
 
-    .color-btn:active {
-      opacity: 0.8;
-    }
+    .color-btn:active { opacity: 0.8; }
 
     .color-btn.active {
       border-color: #0a84ff;
@@ -164,9 +190,9 @@
       flex-shrink: 0;
     }
 
-    .color-swatch.black  { background: #000; }
-    .color-swatch.gray   { background: #808080; }
-    .color-swatch.white  { background: #fff; border: 1px solid #555; }
+    .color-swatch.black { background: #000; }
+    .color-swatch.gray  { background: #808080; }
+    .color-swatch.white { background: #fff; border: 1px solid #555; }
 
     .tool-btn {
       display: flex;
@@ -190,9 +216,7 @@
       background: #3d2e00;
     }
 
-    .tool-btn:active {
-      opacity: 0.8;
-    }
+    .tool-btn:active { opacity: 0.8; }
 
     .tool-icon {
       font-size: 20px;
@@ -210,6 +234,8 @@
       justify-content: flex-start;
       padding: 20px;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+      min-height: 0;
     }
 
     #grid-placeholder {
@@ -229,6 +255,7 @@
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
+      flex-shrink: 0;
     }
 
     .num-cell {
@@ -246,15 +273,14 @@
 
     .draw-cell {
       background: #fff;
-      width: 30px;
-      height: 30px;
+      width: var(--cell-size);
+      height: var(--cell-size);
       cursor: crosshair;
     }
 
     /* ── Print styles ───────────────────────────────── */
     @media print {
       html, body {
-        overflow: visible;
         height: auto;
       }
 
@@ -272,11 +298,10 @@
         padding: 10px;
         background: #fff;
         display: block;
+        touch-action: auto;
       }
 
-      #grid-placeholder {
-        display: none;
-      }
+      #grid-placeholder { display: none; }
 
       #grid-wrapper {
         border: 1px solid #999;
@@ -305,26 +330,33 @@
     <div class="control-group">
       <div class="input-row">
         <label>Breite (Spalten)</label>
-        <input type="number" id="input-cols" min="1" max="500" value="10" placeholder="10">
+        <input type="number" id="input-cols" min="1" max="500" value="10" inputmode="numeric">
       </div>
       <div class="input-row">
         <label>Höhe (Zeilen)</label>
-        <input type="number" id="input-rows" min="1" max="500" value="10" placeholder="10">
+        <input type="number" id="input-rows" min="1" max="500" value="10" inputmode="numeric">
       </div>
       <button class="btn btn-primary" id="btn-create">Raster erstellen</button>
     </div>
 
+    <h2>Zoom</h2>
+    <div class="zoom-row">
+      <button class="zoom-btn" id="btn-zoom-out">−</button>
+      <span class="zoom-label" id="zoom-label">100%</span>
+      <button class="zoom-btn" id="btn-zoom-in">+</button>
+    </div>
+
     <h2>Farbe</h2>
     <div class="color-buttons">
-      <div class="color-btn active" id="btn-black" data-color="#000000">
+      <div class="color-btn active" id="btn-black">
         <span class="color-swatch black"></span>
         <span>Schwarz</span>
       </div>
-      <div class="color-btn" id="btn-gray" data-color="#808080">
+      <div class="color-btn" id="btn-gray">
         <span class="color-swatch gray"></span>
         <span>Grau</span>
       </div>
-      <div class="color-btn" id="btn-white" data-color="#ffffff">
+      <div class="color-btn" id="btn-white">
         <span class="color-swatch white"></span>
         <span>Weiß</span>
       </div>
@@ -358,27 +390,55 @@
   // ── State ──────────────────────────────────────────
   let numCols = 0;
   let numRows = 0;
-  let cellColors = [];       // '' means empty/white background
-  let history = [];          // stack of snapshots for undo
+  let cellColors = [];
+  let history = [];
   let isPainting = false;
   let sessionSnapshot = null;
-  let currentTool = 'color'; // 'color' | 'eraser'
+  let currentTool = 'color';
   let currentColor = '#000000';
   let lastPaintedIdx = -1;
 
+  const ZOOM_STEPS = [15, 20, 25, 30, 40, 50, 60];
+  let zoomIdx = 3; // default 30px = 100%
+
   // ── DOM refs ───────────────────────────────────────
-  const gridWrapper   = document.getElementById('grid-wrapper');
-  const placeholder   = document.getElementById('grid-placeholder');
-  const btnCreate     = document.getElementById('btn-create');
-  const inputCols     = document.getElementById('input-cols');
-  const inputRows     = document.getElementById('input-rows');
-  const btnBlack      = document.getElementById('btn-black');
-  const btnGray       = document.getElementById('btn-gray');
-  const btnWhite      = document.getElementById('btn-white');
-  const btnEraser     = document.getElementById('btn-eraser');
-  const btnUndo       = document.getElementById('btn-undo');
-  const btnClear      = document.getElementById('btn-clear');
-  const btnExport     = document.getElementById('btn-export');
+  const gridWrapper  = document.getElementById('grid-wrapper');
+  const placeholder  = document.getElementById('grid-placeholder');
+  const btnCreate    = document.getElementById('btn-create');
+  const inputCols    = document.getElementById('input-cols');
+  const inputRows    = document.getElementById('input-rows');
+  const btnBlack     = document.getElementById('btn-black');
+  const btnGray      = document.getElementById('btn-gray');
+  const btnWhite     = document.getElementById('btn-white');
+  const btnEraser    = document.getElementById('btn-eraser');
+  const btnUndo      = document.getElementById('btn-undo');
+  const btnClear     = document.getElementById('btn-clear');
+  const btnExport    = document.getElementById('btn-export');
+  const btnZoomIn    = document.getElementById('btn-zoom-in');
+  const btnZoomOut   = document.getElementById('btn-zoom-out');
+  const zoomLabel    = document.getElementById('zoom-label');
+
+  // ── Zoom ───────────────────────────────────────────
+  function applyZoom() {
+    const size = ZOOM_STEPS[zoomIdx];
+    document.documentElement.style.setProperty('--cell-size', size + 'px');
+    zoomLabel.textContent = Math.round(size / 30 * 100) + '%';
+    btnZoomOut.disabled = zoomIdx === 0;
+    btnZoomIn.disabled  = zoomIdx === ZOOM_STEPS.length - 1;
+    // update grid columns if grid exists
+    if (numCols > 0) {
+      gridWrapper.style.gridTemplateColumns = `22px repeat(${numCols}, var(--cell-size))`;
+    }
+  }
+
+  btnZoomIn.addEventListener('click', () => {
+    if (zoomIdx < ZOOM_STEPS.length - 1) { zoomIdx++; applyZoom(); }
+  });
+  btnZoomOut.addEventListener('click', () => {
+    if (zoomIdx > 0) { zoomIdx--; applyZoom(); }
+  });
+
+  applyZoom();
 
   // ── Grid creation ──────────────────────────────────
   function createGrid(cols, rows) {
@@ -387,14 +447,11 @@
     cellColors = new Array(cols * rows).fill('');
     history = [];
 
-    // CSS Grid: first column for row-numbers (22px), then cols * 30px
-    // First row for col-numbers (22px), then rows * 30px
-    gridWrapper.style.gridTemplateColumns = `22px repeat(${cols}, 30px)`;
+    gridWrapper.style.gridTemplateColumns = `22px repeat(${cols}, var(--cell-size))`;
     gridWrapper.innerHTML = '';
 
-    // Header row: empty corner + column numbers
-    const corner = makeNumCell('');
-    gridWrapper.appendChild(corner);
+    // Header row: corner + column numbers
+    gridWrapper.appendChild(makeNumCell(''));
     for (let c = 1; c <= cols; c++) {
       gridWrapper.appendChild(makeNumCell(c));
     }
@@ -425,8 +482,7 @@
   // ── Paint logic ────────────────────────────────────
   function paintCell(cell) {
     const idx = parseInt(cell.dataset.idx, 10);
-    if (isNaN(idx)) return;
-    if (idx === lastPaintedIdx) return;
+    if (isNaN(idx) || idx === lastPaintedIdx) return;
     lastPaintedIdx = idx;
 
     if (currentTool === 'eraser') {
@@ -440,11 +496,10 @@
 
   function cellFromPoint(x, y) {
     const el = document.elementFromPoint(x, y);
-    if (el && el.classList.contains('draw-cell')) return el;
-    return null;
+    return (el && el.classList.contains('draw-cell')) ? el : null;
   }
 
-  // ── Pointer events ─────────────────────────────────
+  // ── Pointer events (grid only) ─────────────────────
   gridWrapper.addEventListener('pointerdown', e => {
     e.preventDefault();
     isPainting = true;
@@ -462,7 +517,8 @@
   });
 
   function stopPainting() {
-    if (isPainting && sessionSnapshot) {
+    if (!isPainting) return;
+    if (sessionSnapshot) {
       history.push(sessionSnapshot);
       if (history.length > 100) history.shift();
     }
@@ -471,22 +527,21 @@
     lastPaintedIdx = -1;
   }
 
-  gridWrapper.addEventListener('pointerup',     stopPainting);
-  gridWrapper.addEventListener('pointercancel', stopPainting);
-  gridWrapper.addEventListener('pointerleave',  e => {
-    // only stop if pointer left the entire wrapper (not just a child)
-    if (e.target === gridWrapper) stopPainting();
-  });
+  // Stop painting on window level so lifting finger anywhere works
+  window.addEventListener('pointerup',     stopPainting);
+  window.addEventListener('pointercancel', stopPainting);
 
-  // ── Buttons ────────────────────────────────────────
+  // ── Sidebar buttons ────────────────────────────────
   btnCreate.addEventListener('click', () => {
     const c = parseInt(inputCols.value, 10);
     const r = parseInt(inputRows.value, 10);
     if (!c || !r || c < 1 || r < 1) return;
+    // blur inputs to dismiss keyboard before building grid
+    inputCols.blur();
+    inputRows.blur();
     createGrid(c, r);
   });
 
-  // Allow pressing Enter in inputs to create grid
   [inputCols, inputRows].forEach(inp => {
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') btnCreate.click();
@@ -515,10 +570,8 @@
 
   btnUndo.addEventListener('click', () => {
     if (history.length === 0) return;
-    const prev = history.pop();
-    cellColors = prev;
-    const cells = gridWrapper.querySelectorAll('.draw-cell');
-    cells.forEach(cell => {
+    cellColors = history.pop();
+    gridWrapper.querySelectorAll('.draw-cell').forEach(cell => {
       const idx = parseInt(cell.dataset.idx, 10);
       cell.style.backgroundColor = cellColors[idx] || '';
     });
@@ -534,9 +587,7 @@
     });
   });
 
-  btnExport.addEventListener('click', () => {
-    window.print();
-  });
+  btnExport.addEventListener('click', () => window.print());
 </script>
 </body>
 </html>
