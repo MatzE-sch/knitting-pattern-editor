@@ -364,6 +364,10 @@
 
     <h2>Werkzeuge</h2>
     <div class="control-group">
+      <div class="tool-btn" id="btn-scroll">
+        <span class="tool-icon">🖐</span>
+        <span>Scrollen</span>
+      </div>
       <div class="tool-btn" id="btn-eraser">
         <span class="tool-icon">⬜</span>
         <span>Radierer</span>
@@ -410,6 +414,7 @@
   const btnBlack     = document.getElementById('btn-black');
   const btnGray      = document.getElementById('btn-gray');
   const btnWhite     = document.getElementById('btn-white');
+  const btnScroll    = document.getElementById('btn-scroll');
   const btnEraser    = document.getElementById('btn-eraser');
   const btnUndo      = document.getElementById('btn-undo');
   const btnClear     = document.getElementById('btn-clear');
@@ -501,6 +506,7 @@
 
   // ── Pointer events (grid only) ─────────────────────
   gridWrapper.addEventListener('pointerdown', e => {
+    if (currentTool === 'scroll') return;
     e.preventDefault();
     isPainting = true;
     lastPaintedIdx = -1;
@@ -556,16 +562,28 @@
     else if (color === '#808080') btnGray.classList.add('active');
     else if (color === '#ffffff') btnWhite.classList.add('active');
     btnEraser.classList.remove('active');
+    btnScroll.classList.remove('active');
+    gridWrapper.style.touchAction = 'none';
   }
 
   btnBlack.addEventListener('click', () => selectColorTool('#000000'));
   btnGray.addEventListener('click',  () => selectColorTool('#808080'));
   btnWhite.addEventListener('click', () => selectColorTool('#ffffff'));
 
+  btnScroll.addEventListener('click', () => {
+    currentTool = 'scroll';
+    [btnBlack, btnGray, btnWhite].forEach(b => b.classList.remove('active'));
+    btnEraser.classList.remove('active');
+    btnScroll.classList.add('active');
+    gridWrapper.style.touchAction = 'pan-x pan-y';
+  });
+
   btnEraser.addEventListener('click', () => {
     currentTool = 'eraser';
     [btnBlack, btnGray, btnWhite].forEach(b => b.classList.remove('active'));
     btnEraser.classList.add('active');
+    btnScroll.classList.remove('active');
+    gridWrapper.style.touchAction = 'none';
   });
 
   btnUndo.addEventListener('click', () => {
