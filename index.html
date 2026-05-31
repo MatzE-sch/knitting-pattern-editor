@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Strickmuster-Editor</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
       --cell-size: 18px;
@@ -283,6 +282,29 @@
       border-bottom: 1px solid #ccc;
     }
 
+    /* ── Print styles ───────────────────────────────── */
+    @media print {
+      html, body { height: auto; }
+      #app { display: block; height: auto; }
+      #sidebar { display: none; }
+      #canvas-area {
+        overflow: visible;
+        padding: 10px;
+        background: #fff;
+        display: block;
+      }
+      #grid-placeholder { display: none; }
+      #grid-wrapper { border: 1px solid #999; gap: 0; }
+      .num-cell {
+        background: #eee;
+        border-right: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+      }
+      .draw-cell {
+        border-right: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+      }
+    }
   </style>
 </head>
 <body>
@@ -570,83 +592,7 @@
     });
   });
 
-  btnExport.addEventListener('click', () => {
-    if (numCols === 0) return;
-    const { jsPDF } = window.jspdf;
-
-    const cellMm    = 5;
-    const labelMm   = 7;
-    const margin    = 10;
-    const fontSize  = 4;
-    const PAGE_MAX  = 100; // max cells per page in each direction
-
-    const colPages = Math.ceil(numCols / PAGE_MAX);
-    const rowPages = Math.ceil(numRows / PAGE_MAX);
-    let doc = null;
-
-    for (let rp = 0; rp < rowPages; rp++) {
-      const startRow = rp * PAGE_MAX;
-      const endRow   = Math.min(startRow + PAGE_MAX, numRows);
-      const pageRows = endRow - startRow;
-
-      for (let cp = 0; cp < colPages; cp++) {
-        const startCol = cp * PAGE_MAX;
-        const endCol   = Math.min(startCol + PAGE_MAX, numCols);
-        const pageCols = endCol - startCol;
-
-        const pageW = margin * 2 + labelMm + pageCols * cellMm;
-        const pageH = margin * 2 + labelMm + pageRows * cellMm;
-        const orient = pageW >= pageH ? 'landscape' : 'portrait';
-
-        if (doc === null) {
-          doc = new jsPDF({ orientation: orient, unit: 'mm', format: [pageW, pageH] });
-        } else {
-          doc.addPage([pageW, pageH], orient);
-        }
-
-        const ox = margin;
-        const oy = margin;
-
-        doc.setFontSize(fontSize);
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.1);
-
-        // Column numbers
-        for (let c = 0; c < pageCols; c++) {
-          doc.text(
-            String(startCol + c + 1),
-            ox + labelMm + c * cellMm + cellMm / 2,
-            oy + labelMm - 1,
-            { align: 'center' }
-          );
-        }
-
-        // Rows: row number + cells
-        for (let r = 0; r < pageRows; r++) {
-          const cy = oy + labelMm + r * cellMm;
-          doc.text(
-            String(startRow + r + 1),
-            ox + labelMm / 2,
-            cy + cellMm / 2 + fontSize * 0.18,
-            { align: 'center' }
-          );
-
-          for (let c = 0; c < pageCols; c++) {
-            const cx    = ox + labelMm + c * cellMm;
-            const color = cellColors[(startRow + r) * numCols + (startCol + c)];
-
-            if (color === '#000000')      doc.setFillColor(0, 0, 0);
-            else if (color === '#808080') doc.setFillColor(128, 128, 128);
-            else                          doc.setFillColor(255, 255, 255);
-
-            doc.rect(cx, cy, cellMm, cellMm, 'FD');
-          }
-        }
-      }
-    }
-
-    doc.save('strickmuster.pdf');
-  });
+  btnExport.addEventListener('click', () => window.print());
 </script>
 </body>
 </html>
