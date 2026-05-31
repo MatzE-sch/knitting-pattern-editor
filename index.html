@@ -262,14 +262,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 9px;
+      font-size: calc(var(--cell-size) * 0.55);
       color: #555;
       font-weight: 500;
-      width: 22px;
-      height: 22px;
+      width: var(--cell-size);
+      height: var(--cell-size);
       pointer-events: none;
       border-right: 1px solid #bbb;
       border-bottom: 1px solid #bbb;
+      overflow: hidden;
     }
 
     .draw-cell {
@@ -370,6 +371,10 @@
 
     <h2>Werkzeuge</h2>
     <div class="control-group">
+      <div class="tool-btn" id="btn-scroll">
+        <span class="tool-icon">🖐</span>
+        <span>Scrollen</span>
+      </div>
       <div class="tool-btn" id="btn-eraser">
         <span class="tool-icon">⬜</span>
         <span>Radierer</span>
@@ -416,6 +421,7 @@
   const btnBlack     = document.getElementById('btn-black');
   const btnGray      = document.getElementById('btn-gray');
   const btnWhite     = document.getElementById('btn-white');
+  const btnScroll    = document.getElementById('btn-scroll');
   const btnEraser    = document.getElementById('btn-eraser');
   const btnUndo      = document.getElementById('btn-undo');
   const btnClear     = document.getElementById('btn-clear');
@@ -434,7 +440,7 @@
     btnZoomIn.disabled  = zoomIdx === ZOOM_STEPS.length - 1;
     // update grid columns if grid exists
     if (numCols > 0) {
-      gridWrapper.style.gridTemplateColumns = `22px repeat(${numCols}, var(--cell-size))`;
+      gridWrapper.style.gridTemplateColumns = `var(--cell-size) repeat(${numCols}, var(--cell-size))`;
     }
   }
 
@@ -454,7 +460,7 @@
     cellColors = new Array(cols * rows).fill('');
     history = [];
 
-    gridWrapper.style.gridTemplateColumns = `22px repeat(${cols}, var(--cell-size))`;
+    gridWrapper.style.gridTemplateColumns = `var(--cell-size) repeat(${cols}, var(--cell-size))`;
     gridWrapper.innerHTML = '';
 
     // Header row: corner + column numbers
@@ -539,38 +545,6 @@
   window.addEventListener('pointerup',     stopPainting);
   window.addEventListener('pointercancel', stopPainting);
 
-  // ── 2-Finger Pan ───────────────────────────────────
-  let panStart = null;
-
-  canvasArea.addEventListener('touchstart', e => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      stopPainting();
-      panStart = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-        scrollLeft: canvasArea.scrollLeft,
-        scrollTop:  canvasArea.scrollTop
-      };
-    } else {
-      panStart = null;
-    }
-  }, { passive: false });
-
-  canvasArea.addEventListener('touchmove', e => {
-    if (e.touches.length === 2 && panStart) {
-      e.preventDefault();
-      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      canvasArea.scrollLeft = panStart.scrollLeft - (cx - panStart.x);
-      canvasArea.scrollTop  = panStart.scrollTop  - (cy - panStart.y);
-    }
-  }, { passive: false });
-
-  canvasArea.addEventListener('touchend', e => {
-    if (e.touches.length < 2) panStart = null;
-  }, { passive: true });
-
   // ── Sidebar buttons ────────────────────────────────
   btnCreate.addEventListener('click', () => {
     const c = parseInt(inputCols.value, 10);
@@ -596,16 +570,28 @@
     else if (color === '#808080') btnGray.classList.add('active');
     else if (color === '#ffffff') btnWhite.classList.add('active');
     btnEraser.classList.remove('active');
+    btnScroll.classList.remove('active');
+    gridWrapper.style.touchAction = 'none';
   }
 
   btnBlack.addEventListener('click', () => selectColorTool('#000000'));
   btnGray.addEventListener('click',  () => selectColorTool('#808080'));
   btnWhite.addEventListener('click', () => selectColorTool('#ffffff'));
 
+  btnScroll.addEventListener('click', () => {
+    currentTool = 'scroll';
+    [btnBlack, btnGray, btnWhite].forEach(b => b.classList.remove('active'));
+    btnEraser.classList.remove('active');
+    btnScroll.classList.add('active');
+    gridWrapper.style.touchAction = 'pan-x pan-y';
+  });
+
   btnEraser.addEventListener('click', () => {
     currentTool = 'eraser';
     [btnBlack, btnGray, btnWhite].forEach(b => b.classList.remove('active'));
     btnEraser.classList.add('active');
+    btnScroll.classList.remove('active');
+    gridWrapper.style.touchAction = 'none';
   });
 
   btnUndo.addEventListener('click', () => {
