@@ -284,25 +284,33 @@
 
     /* ── Print styles ───────────────────────────────── */
     @media print {
+      /* 2.8mm per cell → 100 cells = 280mm, fits on A4 (297mm - margins) */
+      :root { --cell-size: 2.8mm; }
+
+      @page { size: A4 portrait; margin: 8mm; }
+
       html, body { height: auto; }
       #app { display: block; height: auto; }
       #sidebar { display: none; }
       #canvas-area {
         overflow: visible;
-        padding: 10px;
+        padding: 0;
         background: #fff;
         display: block;
       }
       #grid-placeholder { display: none; }
-      #grid-wrapper { border: 1px solid #999; gap: 0; }
+      #grid-wrapper {
+        border: 0.3mm solid #999;
+        gap: 0;
+      }
       .num-cell {
         background: #eee;
-        border-right: 1px solid #ccc;
-        border-bottom: 1px solid #ccc;
+        border-right: 0.2mm solid #ccc;
+        border-bottom: 0.2mm solid #ccc;
       }
       .draw-cell {
-        border-right: 1px solid #ddd;
-        border-bottom: 1px solid #ddd;
+        border-right: 0.2mm solid #ddd;
+        border-bottom: 0.2mm solid #ddd;
       }
     }
   </style>
