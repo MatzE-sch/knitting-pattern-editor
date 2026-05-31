@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Strickmuster-Editor</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    #sidebar {
+      width: 200px;
+      min-width: 200px;
+      background: #2c2c2e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px 14px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #sidebar h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8e8e93;
+      margin-bottom: -8px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-row label {
+      font-size: 12px;
+      color: #aeaeb2;
+    }
+
+    .input-row input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 10px;
+      background: #3a3a3c;
+      color: #fff;
+      font-size: 16px;
+      -webkit-appearance: none;
+      appearance: none;
+      outline: none;
+    }
+
+    .input-row input[type="number"]:focus {
+      background: #48484a;
+      box-shadow: 0 0 0 2px #0a84ff;
+    }
+
+    /* hide number spinner arrows */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .btn:active {
+      opacity: 0.75;
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: #0a84ff;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #3a3a3c;
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #ff453a;
+      color: #fff;
+    }
+
+    .btn-success {
+      background: #30d158;
+      color: #fff;
+    }
+
+    /* ── Color Buttons ──────────────────────────────── */
+    .color-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .color-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: #3a3a3c;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+
+    .color-btn:active {
+      opacity: 0.8;
+    }
+
+    .color-btn.active {
+      border-color: #0a84ff;
+      background: #1c3a5e;
+    }
+
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .color-swatch.black  { background: #000; }
+    .color-swatch.gray   { background: #808080; }
+    .color-swatch.white  { background: #fff; border: 1px solid #555; }
+
+    .tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: #3a3a3c;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+
+    .tool-btn.active {
+      border-color: #ff9f0a;
+      background: #3d2e00;
+    }
+
+    .tool-btn:active {
+      opacity: 0.8;
+    }
+
+    .tool-icon {
+      font-size: 20px;
+      width: 28px;
+      text-align: center;
+    }
+
+    /* ── Main area ──────────────────────────────────── */
+    #canvas-area {
+      flex: 1;
+      overflow: auto;
+      background: #e5e5ea;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #grid-placeholder {
+      color: #8e8e93;
+      font-size: 16px;
+      text-align: center;
+      margin: auto;
+      line-height: 1.6;
+    }
+
+    /* ── Grid ────────────────────────────────────────── */
+    #grid-wrapper {
+      display: inline-grid;
+      border: 2px solid #aaa;
+      background: #aaa;
+      gap: 1px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .num-cell {
+      background: #d1d1d6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #555;
+      font-weight: 500;
+      width: 22px;
+      height: 22px;
+      pointer-events: none;
+    }
+
+    .draw-cell {
+      background: #fff;
+      width: 30px;
+      height: 30px;
+      cursor: crosshair;
+    }
+
+    /* ── Print styles ───────────────────────────────── */
+    @media print {
+      html, body {
+        overflow: visible;
+        height: auto;
+      }
+
+      #app {
+        display: block;
+        height: auto;
+      }
+
+      #sidebar {
+        display: none;
+      }
+
+      #canvas-area {
+        overflow: visible;
+        padding: 10px;
+        background: #fff;
+        display: block;
+      }
+
+      #grid-placeholder {
+        display: none;
+      }
+
+      #grid-wrapper {
+        border: 1px solid #999;
+        gap: 1px;
+        background: #999;
+      }
+
+      .num-cell {
+        background: #eee;
+        width: 18px;
+        height: 18px;
+        font-size: 7px;
+      }
+
+      .draw-cell {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h2>Raster</h2>
+    <div class="control-group">
+      <div class="input-row">
+        <label>Breite (Spalten)</label>
+        <input type="number" id="input-cols" min="1" max="500" value="10" placeholder="10">
+      </div>
+      <div class="input-row">
+        <label>Höhe (Zeilen)</label>
+        <input type="number" id="input-rows" min="1" max="500" value="10" placeholder="10">
+      </div>
+      <button class="btn btn-primary" id="btn-create">Raster erstellen</button>
+    </div>
+
+    <h2>Farbe</h2>
+    <div class="color-buttons">
+      <div class="color-btn active" id="btn-black" data-color="#000000">
+        <span class="color-swatch black"></span>
+        <span>Schwarz</span>
+      </div>
+      <div class="color-btn" id="btn-gray" data-color="#808080">
+        <span class="color-swatch gray"></span>
+        <span>Grau</span>
+      </div>
+      <div class="color-btn" id="btn-white" data-color="#ffffff">
+        <span class="color-swatch white"></span>
+        <span>Weiß</span>
+      </div>
+    </div>
+
+    <h2>Werkzeuge</h2>
+    <div class="control-group">
+      <div class="tool-btn" id="btn-eraser">
+        <span class="tool-icon">⬜</span>
+        <span>Radierer</span>
+      </div>
+    </div>
+
+    <h2>Aktionen</h2>
+    <div class="control-group">
+      <button class="btn btn-secondary" id="btn-undo">↩ Rückgängig</button>
+      <button class="btn btn-danger" id="btn-clear">✕ Alles löschen</button>
+      <button class="btn btn-success" id="btn-export">⬇ Als PDF</button>
+    </div>
+  </aside>
+
+  <main id="canvas-area">
+    <div id="grid-placeholder">
+      Gib Breite und Höhe ein<br>und tippe auf <strong>Raster erstellen</strong>
+    </div>
+    <div id="grid-wrapper" style="display:none;"></div>
+  </main>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────
+  let numCols = 0;
+  let numRows = 0;
+  let cellColors = [];       // '' means empty/white background
+  let history = [];          // stack of snapshots for undo
+  let isPainting = false;
+  let sessionSnapshot = null;
+  let currentTool = 'color'; // 'color' | 'eraser'
+  let currentColor = '#000000';
+  let lastPaintedIdx = -1;
+
+  // ── DOM refs ───────────────────────────────────────
+  const gridWrapper   = document.getElementById('grid-wrapper');
+  const placeholder   = document.getElementById('grid-placeholder');
+  const btnCreate     = document.getElementById('btn-create');
+  const inputCols     = document.getElementById('input-cols');
+  const inputRows     = document.getElementById('input-rows');
+  const btnBlack      = document.getElementById('btn-black');
+  const btnGray       = document.getElementById('btn-gray');
+  const btnWhite      = document.getElementById('btn-white');
+  const btnEraser     = document.getElementById('btn-eraser');
+  const btnUndo       = document.getElementById('btn-undo');
+  const btnClear      = document.getElementById('btn-clear');
+  const btnExport     = document.getElementById('btn-export');
+
+  // ── Grid creation ──────────────────────────────────
+  function createGrid(cols, rows) {
+    numCols = cols;
+    numRows = rows;
+    cellColors = new Array(cols * rows).fill('');
+    history = [];
+
+    // CSS Grid: first column for row-numbers (22px), then cols * 30px
+    // First row for col-numbers (22px), then rows * 30px
+    gridWrapper.style.gridTemplateColumns = `22px repeat(${cols}, 30px)`;
+    gridWrapper.innerHTML = '';
+
+    // Header row: empty corner + column numbers
+    const corner = makeNumCell('');
+    gridWrapper.appendChild(corner);
+    for (let c = 1; c <= cols; c++) {
+      gridWrapper.appendChild(makeNumCell(c));
+    }
+
+    // Data rows: row number + draw cells
+    for (let r = 0; r < rows; r++) {
+      gridWrapper.appendChild(makeNumCell(r + 1));
+      for (let c = 0; c < cols; c++) {
+        const idx = r * cols + c;
+        const cell = document.createElement('div');
+        cell.className = 'draw-cell';
+        cell.dataset.idx = idx;
+        gridWrapper.appendChild(cell);
+      }
+    }
+
+    placeholder.style.display = 'none';
+    gridWrapper.style.display = 'inline-grid';
+  }
+
+  function makeNumCell(text) {
+    const el = document.createElement('div');
+    el.className = 'num-cell';
+    el.textContent = text;
+    return el;
+  }
+
+  // ── Paint logic ────────────────────────────────────
+  function paintCell(cell) {
+    const idx = parseInt(cell.dataset.idx, 10);
+    if (isNaN(idx)) return;
+    if (idx === lastPaintedIdx) return;
+    lastPaintedIdx = idx;
+
+    if (currentTool === 'eraser') {
+      cellColors[idx] = '';
+      cell.style.backgroundColor = '';
+    } else {
+      cellColors[idx] = currentColor;
+      cell.style.backgroundColor = currentColor;
+    }
+  }
+
+  function cellFromPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (el && el.classList.contains('draw-cell')) return el;
+    return null;
+  }
+
+  // ── Pointer events ─────────────────────────────────
+  gridWrapper.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    isPainting = true;
+    lastPaintedIdx = -1;
+    sessionSnapshot = [...cellColors];
+    const cell = cellFromPoint(e.clientX, e.clientY);
+    if (cell) paintCell(cell);
+  });
+
+  gridWrapper.addEventListener('pointermove', e => {
+    if (!isPainting) return;
+    e.preventDefault();
+    const cell = cellFromPoint(e.clientX, e.clientY);
+    if (cell) paintCell(cell);
+  });
+
+  function stopPainting() {
+    if (isPainting && sessionSnapshot) {
+      history.push(sessionSnapshot);
+      if (history.length > 100) history.shift();
+    }
+    isPainting = false;
+    sessionSnapshot = null;
+    lastPaintedIdx = -1;
+  }
+
+  gridWrapper.addEventListener('pointerup',     stopPainting);
+  gridWrapper.addEventListener('pointercancel', stopPainting);
+  gridWrapper.addEventListener('pointerleave',  e => {
+    // only stop if pointer left the entire wrapper (not just a child)
+    if (e.target === gridWrapper) stopPainting();
+  });
+
+  // ── Buttons ────────────────────────────────────────
+  btnCreate.addEventListener('click', () => {
+    const c = parseInt(inputCols.value, 10);
+    const r = parseInt(inputRows.value, 10);
+    if (!c || !r || c < 1 || r < 1) return;
+    createGrid(c, r);
+  });
+
+  // Allow pressing Enter in inputs to create grid
+  [inputCols, inputRows].forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') btnCreate.click();
+    });
+  });
+
+  function selectColorTool(color) {
+    currentTool = 'color';
+    currentColor = color;
+    [btnBlack, btnGray, btnWhite].forEach(b => b.classList.remove('active'));
+    if (color === '#000000') btnBlack.classList.add('active');
+    else if (color === '#808080') btnGray.classList.add('active');
+    else if (color === '#ffffff') btnWhite.classList.add('active');
+    btnEraser.classList.remove('active');
+  }
+
+  btnBlack.addEventListener('click', () => selectColorTool('#000000'));
+  btnGray.addEventListener('click',  () => selectColorTool('#808080'));
+  btnWhite.addEventListener('click', () => selectColorTool('#ffffff'));
+
+  btnEraser.addEventListener('click', () => {
+    currentTool = 'eraser';
+    [btnBlack, btnGray, btnWhite].forEach(b => b.classList.remove('active'));
+    btnEraser.classList.add('active');
+  });
+
+  btnUndo.addEventListener('click', () => {
+    if (history.length === 0) return;
+    const prev = history.pop();
+    cellColors = prev;
+    const cells = gridWrapper.querySelectorAll('.draw-cell');
+    cells.forEach(cell => {
+      const idx = parseInt(cell.dataset.idx, 10);
+      cell.style.backgroundColor = cellColors[idx] || '';
+    });
+  });
+
+  btnClear.addEventListener('click', () => {
+    if (numCols === 0) return;
+    history.push([...cellColors]);
+    if (history.length > 100) history.shift();
+    cellColors.fill('');
+    gridWrapper.querySelectorAll('.draw-cell').forEach(cell => {
+      cell.style.backgroundColor = '';
+    });
+  });
+
+  btnExport.addEventListener('click', () => {
+    window.print();
+  });
+</script>
+</body>
+</html>
