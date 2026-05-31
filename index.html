@@ -574,56 +574,73 @@
     if (numCols === 0) return;
     const { jsPDF } = window.jspdf;
 
-    const cellMm   = 5;      // mm per grid cell
-    const labelMm  = 7;      // mm for number row/column
-    const margin   = 10;
-    const fontSize = 4;
+    const cellMm    = 5;
+    const labelMm   = 7;
+    const margin    = 10;
+    const fontSize  = 4;
+    const PAGE_MAX  = 100; // max cells per page in each direction
 
-    const gridW = labelMm + numCols * cellMm;
-    const gridH = labelMm + numRows * cellMm;
-    const pageW = gridW + margin * 2;
-    const pageH = gridH + margin * 2;
+    const colPages = Math.ceil(numCols / PAGE_MAX);
+    const rowPages = Math.ceil(numRows / PAGE_MAX);
+    let doc = null;
 
-    const doc = new jsPDF({
-      orientation: pageW >= pageH ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pageW, pageH]
-    });
+    for (let rp = 0; rp < rowPages; rp++) {
+      const startRow = rp * PAGE_MAX;
+      const endRow   = Math.min(startRow + PAGE_MAX, numRows);
+      const pageRows = endRow - startRow;
 
-    const ox = margin; // origin x
-    const oy = margin; // origin y
+      for (let cp = 0; cp < colPages; cp++) {
+        const startCol = cp * PAGE_MAX;
+        const endCol   = Math.min(startCol + PAGE_MAX, numCols);
+        const pageCols = endCol - startCol;
 
-    doc.setFontSize(fontSize);
+        const pageW = margin * 2 + labelMm + pageCols * cellMm;
+        const pageH = margin * 2 + labelMm + pageRows * cellMm;
+        const orient = pageW >= pageH ? 'landscape' : 'portrait';
 
-    // Column numbers
-    for (let c = 0; c < numCols; c++) {
-      const x = ox + labelMm + c * cellMm + cellMm / 2;
-      const y = oy + labelMm - 1;
-      doc.text(String(c + 1), x, y, { align: 'center' });
-    }
-
-    // Row numbers + cells
-    for (let r = 0; r < numRows; r++) {
-      const cy = oy + labelMm + r * cellMm;
-
-      // Row number
-      doc.text(String(r + 1), ox + labelMm / 2, cy + cellMm / 2 + fontSize * 0.18, { align: 'center' });
-
-      for (let c = 0; c < numCols; c++) {
-        const cx = ox + labelMm + c * cellMm;
-        const color = cellColors[r * numCols + c];
-
-        if (color === '#000000') {
-          doc.setFillColor(0, 0, 0);
-          doc.rect(cx, cy, cellMm, cellMm, 'FD');
-        } else if (color === '#808080') {
-          doc.setFillColor(128, 128, 128);
-          doc.rect(cx, cy, cellMm, cellMm, 'FD');
+        if (doc === null) {
+          doc = new jsPDF({ orientation: orient, unit: 'mm', format: [pageW, pageH] });
         } else {
-          doc.setFillColor(255, 255, 255);
-          doc.setDrawColor(200, 200, 200);
-          doc.setLineWidth(0.1);
-          doc.rect(cx, cy, cellMm, cellMm, 'FD');
+          doc.addPage([pageW, pageH], orient);
+        }
+
+        const ox = margin;
+        const oy = margin;
+
+        doc.setFontSize(fontSize);
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.1);
+
+        // Column numbers
+        for (let c = 0; c < pageCols; c++) {
+          doc.text(
+            String(startCol + c + 1),
+            ox + labelMm + c * cellMm + cellMm / 2,
+            oy + labelMm - 1,
+            { align: 'center' }
+          );
+        }
+
+        // Rows: row number + cells
+        for (let r = 0; r < pageRows; r++) {
+          const cy = oy + labelMm + r * cellMm;
+          doc.text(
+            String(startRow + r + 1),
+            ox + labelMm / 2,
+            cy + cellMm / 2 + fontSize * 0.18,
+            { align: 'center' }
+          );
+
+          for (let c = 0; c < pageCols; c++) {
+            const cx    = ox + labelMm + c * cellMm;
+            const color = cellColors[(startRow + r) * numCols + (startCol + c)];
+
+            if (color === '#000000')      doc.setFillColor(0, 0, 0);
+            else if (color === '#808080') doc.setFillColor(128, 128, 128);
+            else                          doc.setFillColor(255, 255, 255);
+
+            doc.rect(cx, cy, cellMm, cellMm, 'FD');
+          }
         }
       }
     }
